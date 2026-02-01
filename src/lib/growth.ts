@@ -1,0 +1,44 @@
+import { prisma } from "@/lib/db";
+
+const STAGE_THRESHOLDS = [
+  { stage: 0, min: 0 },
+  { stage: 1, min: 3 },
+  { stage: 2, min: 10 },
+  { stage: 3, min: 25 },
+  { stage: 4, min: 45 },
+];
+
+function stageFor(points: number) {
+  let current = STAGE_THRESHOLDS[0].stage;
+  for (const t of STAGE_THRESHOLDS) if (points >= t.min) current = t.stage;
+  return current;
+}
+
+function startOfDayUTC(d: Date) {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0));
+}
+
+export async function recordContribution(nestId: string, userId: string, source = "moment") {
+  const day = startOfDayUTC(new Date());
+
+  const exists = await prisma.growthCredit.findUnique({
+    where: { nestId_userId_day: { nestId, userId, day } },
+  });
+
+  if (exists) return null;
+
+  await prisma.growthCredit.create({
+    data: { nestId, userId, day, source },
+  });
+
+  const nest = await prisma.nest.findUniqueOrThrow({ where: { id: nestId } });
+  const newPoints = nest.growthPoints + 1;
+  const newStage = stageFor(newPoints);
+
+  const updated = await prisma.nest.update({
+    where: { id: nestId },
+    data: { growthPoints: newPoints, growthStage: newStage },
+  });
+
+  return updated;
+}

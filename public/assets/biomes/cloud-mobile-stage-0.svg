@@ -1,0 +1,14 @@
+<svg width="640" height="260" viewBox="0 0 640 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="260" rx="18" fill="#F8FBFF"/>
+  <path d="M320 24V70" stroke="#A7C7E7" stroke-width="4" stroke-linecap="round"/>
+  <path d="M320 70C280 92 260 110 220 130" stroke="#C9DFF1" stroke-width="3" stroke-linecap="round"/>
+  <path d="M320 70C360 92 380 110 420 130" stroke="#C9DFF1" stroke-width="3" stroke-linecap="round"/>
+  <g opacity="0.9">
+    <path d="M200 150C212 136 236 132 252 146C268 160 256 180 236 186C216 192 192 178 200 150Z" fill="#E7D9A8"/>
+  </g>
+  <g opacity="0.9">
+    <path d="M420 150C432 136 456 132 472 146C488 160 476 180 456 186C436 192 412 178 420 150Z" fill="#A7C7E7"/>
+  </g>
+  <text x="24" y="40" font-size="14" fill="#6B6B6B">Paper mobile</text>
+  <text x="24" y="62" font-size="12" fill="#9A948D">Stage 0</text>
+</svg>

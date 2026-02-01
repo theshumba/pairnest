@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String     @id @default(uuid())
+  email           String     @unique
+  createdAt       DateTime   @default(now())
+  magicLinkToken  String?
+  tokenExpiresAt  DateTime?
+  sessions        Session[]
+  nestMembers     NestMember[]
+  gameTurns       GameTurn[]
+  memories        Memory[]
+  growthCredits   GrowthCredit[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Nest {
+  id             String   @id @default(uuid())
+  code           String   @unique
+  codeExpiresAt  DateTime?
+  codeUsed       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  name           String?
+  biomeId        String   @default("cloud_loft")
+  growthPoints   Int      @default(0)
+  growthStage    Int      @default(0)
+  lastGrowthDate DateTime?
+  settings       String?
+  members        NestMember[]
+  memories       Memory[]
+  gameSessions   GameSession[]
+  albums         Album[]
+  milestones     Milestone[]
+  growthCredits  GrowthCredit[]
+  vaultAlbums    VaultAlbum[]
+  vaultItems     VaultItem[]
+  shelfPins      ShelfPin[]
+  plant          NestPlant?
+  dailyActions   DailyAction[]
+}
+
+model NestMember {
+  nestId   String
+  userId   String
+  joinedAt DateTime @default(now())
+  lastContributionAt DateTime?
+  role     String   @default("member")
+  nest     Nest     @relation(fields: [nestId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+  @@id([nestId, userId])
+}
+
+model GameSession {
+  id        String   @id @default(uuid())
+  nestId    String
+  gameKey   String
+  mode      String
+  status    String
+  gameState String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  nest      Nest     @relation(fields: [nestId], references: [id])
+  turns     GameTurn[]
+}
+
+model GameTurn {
+  id        String   @id @default(uuid())
+  sessionId String
+  userId    String
+  payload   String
+  createdAt DateTime @default(now())
+  session   GameSession @relation(fields: [sessionId], references: [id])
+  user      User        @relation(fields: [userId], references: [id])
+}
+
+model Memory {
+  id          String   @id @default(uuid())
+  nestId      String
+  authorId    String
+  type        String
+  url         String?
+  content     String?
+  isSensitive Boolean  @default(false)
+  isKeepsake  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  nest        Nest     @relation(fields: [nestId], references: [id])
+  user        User     @relation(fields: [authorId], references: [id])
+  albumItems  AlbumItem[]
+  milestones  Milestone[] @relation("MemoryMilestones")
+}
+
+model Album {
+  id          String   @id @default(uuid())
+  nestId      String
+  title       String
+  description String?
+  coverUrl    String?
+  createdAt   DateTime @default(now())
+  nest        Nest     @relation(fields: [nestId], references: [id])
+  items       AlbumItem[]
+}
+
+model AlbumItem {
+  id        String   @id @default(uuid())
+  albumId   String
+  memoryId  String
+  createdAt DateTime @default(now())
+  album     Album    @relation(fields: [albumId], references: [id])
+  memory    Memory   @relation(fields: [memoryId], references: [id])
+}
+
+model Milestone {
+  id        String   @id @default(uuid())
+  nestId    String
+  title     String
+  date      DateTime?
+  memoryId  String?
+  createdAt DateTime @default(now())
+  nest      Nest     @relation(fields: [nestId], references: [id])
+  memory    Memory?  @relation("MemoryMilestones", fields: [memoryId], references: [id])
+}
+
+model VaultAlbum {
+  id          String   @id @default(uuid())
+  nestId      String
+  nest        Nest     @relation(fields: [nestId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String   @default("")
+  createdAt   DateTime @default(now())
+
+  items       VaultItem[]
+
+  @@index([nestId, createdAt])
+}
+
+model VaultItem {
+  id          String   @id @default(uuid())
+  nestId      String
+  nest        Nest     @relation(fields: [nestId], references: [id], onDelete: Cascade)
+
+  albumId     String?
+  album       VaultAlbum? @relation(fields: [albumId], references: [id], onDelete: SetNull)
+
+  visibility  String   @default("both")
+  payload     String
+
+  createdAt   DateTime @default(now())
+
+  @@index([nestId, createdAt])
+  @@index([albumId, createdAt])
+}
+
+model ShelfPin {
+  id        String   @id @default(uuid())
+  nestId    String
+  nest      Nest     @relation(fields: [nestId], references: [id], onDelete: Cascade)
+
+  kind      String
+  targetId  String
+
+  createdAt DateTime @default(now())
+
+  @@unique([nestId, kind])
+}
+
+model GrowthCredit {
+  id        String   @id @default(uuid())
+
+  nestId    String
+  nest      Nest     @relation(fields: [nestId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  day       DateTime
+  source    String
+
+  createdAt DateTime @default(now())
+
+  @@unique([nestId, userId, day])
+  @@index([nestId, day])
+}
+
+model NestPlant {
+  id             String   @id @default(uuid())
+
+  nestId         String   @unique
+  nest           Nest     @relation(fields: [nestId], references: [id], onDelete: Cascade)
+
+  plantKey       String
+  stage          String   @default("seed")
+  streakDays     Int      @default(0)
+  lastWateredDay DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model DailyAction {
+  id        String   @id @default(uuid())
+
+  nestId    String
+  nest      Nest     @relation(fields: [nestId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  day       DateTime
+  action    String
+
+  createdAt DateTime @default(now())
+
+  @@unique([nestId, userId, day, action])
+  @@index([nestId, day])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+
+  nestId    String
+  nest      Nest     @relation(fields: [nestId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  action    String
+  meta      String?
+
+  createdAt DateTime @default(now())
+
+  @@index([nestId, createdAt])
+  @@index([userId, createdAt])
+}
